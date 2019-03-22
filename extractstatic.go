@@ -1,19 +1,23 @@
 package extractstatic
 
 import (
-	"fmt"
 	"regexp"
 	"regexp/syntax"
 )
 
-func Extract(r *regexp.Regexp) ([]string, error) {
-	return StringExtract(r.String())
+func Regexp(r *regexp.Regexp) ([]string, error) {
+	return String(r.String())
 }
 
-func StringExtract(r string) ([]string, error) {
+func String(r string) ([]string, error) {
 	var static []string
+	startNewString := func(s []string) []string {
+		return append(s, "")
+	}
 
+	// skip until depth; -1 = no skip
 	skip := -1
+	// append to both static strings at depth; -1 = no append
 	appendBoth := -1
 
 	p, err := syntax.Parse(r, syntax.Perl)
@@ -22,46 +26,56 @@ func StringExtract(r string) ([]string, error) {
 	}
 
 	walk(0, p, func(n *syntax.Regexp, depth int) {
-		// $skip = -1 if ($depth le $skip);
 		if depth <= skip {
 			skip = -1
 		}
-		// $append_both = -1 if ($depth eq $append_both);
+
 		if depth == appendBoth {
 			appendBoth = -1
 		}
-		// next if ($skip >= 0);
+
 		if skip >= 0 {
 			return
 		}
 
-		// if ($node->family eq 'exact') {
-		// 	# Exact matches are static strings, append to last static string
-		// 	$static[-1] .= $node->visual;
-		// 	if ($append_both >= 0) {
-		// 		$static[-2] .= $node->visual;
-		// 	}
-		// } elsif ($node->family eq 'quant' && $node->min gt 0) {
-		// 	# quantities > 0 can contain static strings, but it should be appended to both ends of the surrounding static strings
-		// 	# /a(b)+c/ -> ("ab", "bc")
-		// 	push @static, "";
-		// 	$append_both = $depth;
-		// } elsif (grep { $_ eq $node->family } ('open', 'close', 'group', 'tail')) {
-		// 	# groups are ignored
-		// } else {
-		// 	# unknown symbol (range, quantity which is possibly 0, ...)
-		// 	# start a new static string and skip all children of this element
-		// 	push @static, "";
-		// 	$skip = $depth;
-		// }
-
-		fmt.Println(n)
-		if n.Op == syntax.OpLiteral && n.Min > 0 {
-			static = append(static, n.String())
+		switch n.Op {
+		case syntax.OpLiteral:
+			// 	Literal matches are static strings, append to last static string
+			if static == nil {
+				static = startNewString(nil)
+			}
+			static[len(static)-1] += n.String()
+			// append to both ends of the static string if repetition count > 1
+			if appendBoth >= 0 && len(static) > 1 {
+				static[len(static)-2] += n.String()
+			}
+		case syntax.OpRepeat:
+			if n.Min > 0 {
+				static = startNewString(static)
+				// append to both ends of the static string if repetition count > 1
+				appendBoth = depth
+			} else {
+				static = startNewString(static)
+				skip = depth
+			}
+		case syntax.OpPlus:
+			static = startNewString(static)
+			appendBoth = depth
+		case syntax.OpConcat, syntax.OpBeginText, syntax.OpEndText, syntax.OpBeginLine, syntax.OpEndLine, syntax.OpCapture:
+		default:
+			static = startNewString(static)
+			skip = depth
 		}
 	})
 
-	return static, nil
+	emptyRemoved := make([]string, 0, len(static))
+	for _, s := range static {
+		if s != "" {
+			emptyRemoved = append(emptyRemoved, s)
+		}
+	}
+
+	return emptyRemoved, nil
 }
 
 func walk(depth int, r *syntax.Regexp, f func(*syntax.Regexp, int)) {
