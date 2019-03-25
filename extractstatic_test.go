@@ -35,6 +35,10 @@ func TestRegexpLongest(t *testing.T) {
 }
 
 func TestRegexpBugs(t *testing.T) {
+	// INTERNAL: double depth jumps
+	shouldExtract(t, `((,)*)imastatic`, []string{"imastatic"})
+	shouldExtract(t, `((,))imastatic`, []string{",imastatic"})
+
 	// should extract []string{"axx", "xxyy", "yyc"}
 	shouldExtract(t, `a((xx)+(yy)+)+c`, []string{"a", "xx", "xxyyc", "yyc"})
 }
