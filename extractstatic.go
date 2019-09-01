@@ -35,6 +35,7 @@ func String(r string) ([]string, error) {
 	skip := -1
 	// append to both static strings at depth; -1 = no append
 	appendBoth := -1
+	didAppendBoth := false
 
 	p, err := syntax.Parse(r, syntax.Perl)
 	if err != nil {
@@ -48,6 +49,7 @@ func String(r string) ([]string, error) {
 
 		if depth == appendBoth {
 			appendBoth = -1
+			didAppendBoth = false
 		}
 
 		if skip >= 0 {
@@ -60,22 +62,28 @@ func String(r string) ([]string, error) {
 			if static == nil {
 				static = startNewString(nil)
 			}
-			static[len(static)-1] += n.String()
+
+			str := n.String()
+			static[len(static)-1] += str
 			// append to both ends of the static string if repetition count > 1
-			if appendBoth >= 0 && len(static) > 1 {
-				static[len(static)-2] += n.String()
+			if appendBoth >= 0 && !didAppendBoth && len(static) > 1 {
+				didAppendBoth = true
+				static[len(static)-2] += str
 			}
 		case syntax.OpRepeat:
 			if n.Min > 0 {
-				static = startNewString(static)
-				// append to both ends of the static string if repetition count > 1
+				if appendBoth == -1 {
+					static = startNewString(static)
+				}
 				appendBoth = depth
 			} else {
 				static = startNewString(static)
 				skip = depth
 			}
 		case syntax.OpPlus:
-			static = startNewString(static)
+			if appendBoth == -1 {
+				static = startNewString(static)
+			}
 			appendBoth = depth
 		case syntax.OpConcat, syntax.OpBeginText, syntax.OpEndText, syntax.OpBeginLine, syntax.OpEndLine, syntax.OpCapture:
 		default:

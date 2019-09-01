@@ -24,6 +24,15 @@ func TestRegexp(t *testing.T) {
 
 	// interleaved brackets
 	shouldExtract(t, `(woot(w(oo)t)woot)+`, []string{"wootwootwoot"})
+
+	// repeated static patterns should be appended to both surrounding static strings
+	// if the repetition is > 1
+	shouldExtract(t, `ab+c`, []string{"ab", "bc"})
+	shouldExtract(t, `ab{1,}c`, []string{"ab", "bc"})
+	shouldExtract(t, `ab*c`, []string{"a", "c"})
+	shouldExtract(t, `ab{0,}c`, []string{"a", "c"})
+	// but only once
+	shouldExtract(t, `ab+b+c`, []string{"ab", "bb", "bc"})
 }
 
 func TestRegexpLongest(t *testing.T) {
@@ -38,9 +47,7 @@ func TestRegexpBugs(t *testing.T) {
 	// INTERNAL: double depth jumps
 	shouldExtract(t, `((,)*)imastatic`, []string{"imastatic"})
 	shouldExtract(t, `((,))imastatic`, []string{",imastatic"})
-
-	// should extract []string{"axx", "xxyy", "yyc"}
-	shouldExtract(t, `a((xx)+(yy)+)+c`, []string{"a", "xx", "xxyyc", "yyc"})
+	shouldExtract(t, `a((xx)+(yy)+)+c`, []string{"axx", "xxyy", "yyc"})
 }
 
 func TestString(t *testing.T) {
