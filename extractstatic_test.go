@@ -26,6 +26,14 @@ func TestRegexp(t *testing.T) {
 	shouldExtract(t, `(woot(w(oo)t)woot)+`, []string{"wootwootwoot"})
 }
 
+func TestRegexpLongest(t *testing.T) {
+	r := regexp.MustCompile(`a.?longest.?bb.?ccc.?`)
+	longest, _ := extractstatic.RegexpLongest(r)
+	if longest != "longest" {
+		t.Errorf("expected %s but extracted %s", "longest", longest)
+	}
+}
+
 func TestRegexpBugs(t *testing.T) {
 	// should extract []string{"axx", "xxyy", "yyc"}
 	shouldExtract(t, `a((xx)+(yy)+)+c`, []string{"a", "xx", "xxyyc", "yyc"})

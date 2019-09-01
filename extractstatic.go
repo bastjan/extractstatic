@@ -3,10 +3,26 @@ package extractstatic
 import (
 	"regexp"
 	"regexp/syntax"
+	"sort"
 )
 
 func Regexp(r *regexp.Regexp) ([]string, error) {
 	return String(r.String())
+}
+
+func RegexpLongest(r *regexp.Regexp) (string, error) {
+	s, err := String(r.String())
+	if err != nil {
+		return "", err
+	}
+	if len(s) == 0 {
+		return "", nil
+	}
+
+	sort.Slice(s, func(i, j int) bool {
+		return len(s[i]) > len(s[j])
+	})
+	return s[0], nil
 }
 
 func String(r string) ([]string, error) {
