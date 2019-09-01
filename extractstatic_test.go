@@ -2,6 +2,7 @@ package extractstatic_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -43,6 +44,13 @@ func TestRegexpLongest(t *testing.T) {
 	}
 }
 
+func TestStringLongest(t *testing.T) {
+	longest, _ := extractstatic.StringLongest(`a.?longest.?bb.?ccc.?`)
+	if longest != "longest" {
+		t.Errorf("expected %s but extracted %s", "longest", longest)
+	}
+}
+
 func TestRegexpBugs(t *testing.T) {
 	// INTERNAL: double depth jumps
 	shouldExtract(t, `((,)*)imastatic`, []string{"imastatic"})
@@ -56,6 +64,12 @@ func TestString(t *testing.T) {
 	if err == nil {
 		t.Error("Invalid regex should result in an error")
 	}
+}
+
+func ExampleString() {
+	static, _ := extractstatic.String(`really\s?complicated.*regexp`)
+	fmt.Println(static)
+	// Output: [really complicated regexp]
 }
 
 func shouldExtract(t *testing.T, subject string, expected []string) {

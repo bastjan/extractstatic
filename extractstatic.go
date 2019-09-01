@@ -1,3 +1,8 @@
+/*Package extractstatic extracts static parts of regexpes.
+
+Useful to prefilter complicated regexp matches on large data sets.
+
+*/
 package extractstatic
 
 import (
@@ -6,25 +11,13 @@ import (
 	"sort"
 )
 
+// Regexp extracts all static parts from the given regexp.
 func Regexp(r *regexp.Regexp) ([]string, error) {
 	return String(r.String())
 }
 
-func RegexpLongest(r *regexp.Regexp) (string, error) {
-	s, err := String(r.String())
-	if err != nil {
-		return "", err
-	}
-	if len(s) == 0 {
-		return "", nil
-	}
-
-	sort.Slice(s, func(i, j int) bool {
-		return len(s[i]) > len(s[j])
-	})
-	return s[0], nil
-}
-
+// String extracts all static parts from the given regexp.
+// Returns a syntax error if regexp can't be parsed.
 func String(r string) ([]string, error) {
 	var static []string
 	startNewString := func(s []string) []string {
@@ -100,6 +93,28 @@ func String(r string) ([]string, error) {
 	}
 
 	return emptyRemoved, nil
+}
+
+// RegexpLongest extracts the longest static string from the given regexp.
+func RegexpLongest(r *regexp.Regexp) (string, error) {
+	return StringLongest(r.String())
+}
+
+// StringLongest extracts the longest static string from the given regexp.
+// Returns a syntax error if regexp can't be parsed.
+func StringLongest(r string) (string, error) {
+	s, err := String(r)
+	if err != nil {
+		return "", err
+	}
+	if len(s) == 0 {
+		return "", nil
+	}
+
+	sort.Slice(s, func(i, j int) bool {
+		return len(s[i]) > len(s[j])
+	})
+	return s[0], nil
 }
 
 func walk(depth int, r *syntax.Regexp, f func(*syntax.Regexp, int)) {
