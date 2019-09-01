@@ -51,6 +51,13 @@ func TestStringLongest(t *testing.T) {
 	}
 }
 
+func TestStringLongestNoStaticString(t *testing.T) {
+	longest, _ := extractstatic.StringLongest(`...`)
+	if longest != "" {
+		t.Error("expected no static string")
+	}
+}
+
 func TestRegexpBugs(t *testing.T) {
 	// INTERNAL: double depth jumps
 	shouldExtract(t, `((,)*)imastatic`, []string{"imastatic"})
@@ -58,9 +65,16 @@ func TestRegexpBugs(t *testing.T) {
 	shouldExtract(t, `a((xx)+(yy)+)+c`, []string{"axx", "xxyy", "yyc"})
 }
 
-func TestString(t *testing.T) {
+func TestStringInvalidRegexp(t *testing.T) {
 	// invalid syntax results in an error
 	_, err := extractstatic.String(`*as`)
+	if err == nil {
+		t.Error("Invalid regex should result in an error")
+	}
+}
+
+func TestStringLongestInvalidRegexp(t *testing.T) {
+	_, err := extractstatic.StringLongest(`*as`)
 	if err == nil {
 		t.Error("Invalid regex should result in an error")
 	}
