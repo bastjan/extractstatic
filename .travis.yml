@@ -1,0 +1,7 @@
+language: go
+go:
+  - 1.11.x
+  - 1.12.x
+after_success:
+  - go test -coverprofile=cover.out
+  - bash <(curl -s https://codecov.io/bash)
