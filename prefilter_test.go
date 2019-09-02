@@ -12,25 +12,34 @@ import (
 
 var needle = regexp.MustCompile(`[^ ]+ [^ ]+ [^ ]+ sshd\[(\d+)\]`)
 
-var haystack = generateLines()
-
 var result bool
 
-func BenchmarkWithoutPrefilter(b *testing.B) {
-	for i := range haystack {
-		result = needle.Match(haystack[i])
+func BenchmarkPrefilter(b *testing.B) {
+	haystack := generateLines()
+
+	b.Run("WithoutPrefilter", withoutPrefilter(haystack))
+	b.Run("WithPrefilter", withPrefilter(haystack))
+}
+
+func withoutPrefilter(haystack [][]byte) func(b *testing.B) {
+	return func(b *testing.B) {
+		for i := range haystack {
+			result = needle.Match(haystack[i])
+		}
 	}
 }
 
-func BenchmarkWithPrefilter(b *testing.B) {
-	static, _ := extractstatic.RegexpLongest(needle)
-	stab := []byte(static)
-	for i := range haystack {
-		if !bytes.Contains(haystack[i], stab) {
-			result = false
-			continue
+func withPrefilter(haystack [][]byte) func(b *testing.B) {
+	return func(b *testing.B) {
+		static, _ := extractstatic.RegexpLongest(needle)
+		stab := []byte(static)
+		for i := range haystack {
+			if !bytes.Contains(haystack[i], stab) {
+				result = false
+				continue
+			}
+			result = needle.Match(haystack[i])
 		}
-		result = needle.Match(haystack[i])
 	}
 }
 
